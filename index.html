@@ -40,6 +40,9 @@
         th {
             background-color: #f2f2f2;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -48,6 +51,11 @@
         <div class="input-group">
             <select id="profileSelect"></select>
             <button onclick="addProfile()">Adicionar Perfil</button>
+            <button onclick="showEditProfileName()">Editar Nome do Perfil</button>
+        </div>
+        <div id="editProfileNameGroup" class="input-group hidden">
+            <input type="text" id="newProfileName" placeholder="Novo nome do perfil">
+            <button onclick="editProfileName()">Salvar Nome</button>
         </div>
         <div class="input-group">
             <input type="number" id="weightInput" placeholder="Peso (kg)" step="0.1">
@@ -56,11 +64,11 @@
         </div>
     </div>
     <div class="container">
-        <h2>Gráfico de Variação</h2>
+        <h2>Gráfico de Variação de Peso</h2>
         <canvas id="weightChart"></canvas>
     </div>
     <div class="container">
-        <h2>Registros</h2>
+        <h2>Registros de Peso</h2>
         <table id="weightTable">
             <thead>
                 <tr>
@@ -119,6 +127,23 @@
             profiles.push({ id: newId, name: `Perfil ${newId}`, weights: [] });
             updateProfileSelect();
             saveData();
+        }
+
+        function showEditProfileName() {
+            document.getElementById('editProfileNameGroup').classList.remove('hidden');
+            const currentProfile = profiles.find(p => p.id === selectedProfile);
+            document.getElementById('newProfileName').value = currentProfile.name;
+        }
+
+        function editProfileName() {
+            const newName = document.getElementById('newProfileName').value.trim();
+            if (newName) {
+                const profile = profiles.find(p => p.id === selectedProfile);
+                profile.name = newName;
+                updateProfileSelect();
+                document.getElementById('editProfileNameGroup').classList.add('hidden');
+                saveData();
+            }
         }
 
         function addWeight() {
