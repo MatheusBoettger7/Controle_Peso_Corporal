@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Peso Corporal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        input, select, button {
+            padding: 5px;
+            margin-right: 10px;
+        }
+        #weightChart {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Controle de Peso Corporal</h1>
+        <div class="input-group">
+            <select id="profileSelect"></select>
+            <button onclick="addProfile()">Adicionar Perfil</button>
+        </div>
+        <div class="input-group">
+            <input type="number" id="weightInput" placeholder="Peso (kg)" step="0.1">
+            <input type="date" id="dateInput">
+            <button onclick="addWeight()">Adicionar Peso</button>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Gráfico de Variação</h2>
+        <canvas id="weightChart"></canvas>
+    </div>
+    <div class="container">
+        <h2>Registros</h2>
+        <table id="weightTable">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Peso (kg)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let profiles = [];
+        let selectedProfile = 1;
+        let chart;
+
+        function initializeChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Peso (kg)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateProfileSelect() {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '';
+            profiles.forEach(profile => {
+                const option = document.createElement('option');
+                option.value = profile.id;
+                option.textContent = profile.name;
+                select.appendChild(option);
+            });
+            select.value = selectedProfile;
+        }
+
+        function addProfile() {
+            const newId = profiles.length > 0 ? Math.max(...profiles.map(p => p.id)) + 1 : 1;
+            profiles.push({ id: newId, name: `Perfil ${newId}`, weights: [] });
+            updateProfileSelect();
+            saveData();
+        }
+
+        function addWeight() {
+            const weight = parseFloat(document.getElementById('weightInput').value);
+            const date = document.getElementById('dateInput').value;
+            if (weight && date) {
+                const profile = profiles.find(p => p.id === selectedProfile);
+                profile.weights.push({ date, weight });
+                updateChart();
+                updateWeightTable();
+                saveData();
+                document.getElementById('weightInput').value = '';
+                document.getElementById('dateInput').value = '';
+            }
+        }
+
+        function updateChart() {
+            const profile = profiles.find(p => p.id === selectedProfile);
+            const sortedWeights = profile.weights.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            chart.data.labels = sortedWeights.map(w => w.date);
+            chart.data.datasets[0].data = sortedWeights.map(w => w.weight);
+            chart.update();
+        }
+
+        function updateWeightTable() {
+            const profile = profiles.find(p => p.id === selectedProfile);
+            const tableBody = document.querySelector('#weightTable tbody');
+            tableBody.innerHTML = '';
+            profile.weights.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((weight, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = weight.date;
+                row.insertCell(1).textContent = weight.weight;
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Remover';
+                deleteButton.onclick = () => removeWeight(index);
+                row.insertCell(2).appendChild(deleteButton);
+            });
+        }
+
+        function removeWeight(index) {
+            const profile = profiles.find(p => p.id === selectedProfile);
+            profile.weights.splice(index, 1);
+            updateChart();
+            updateWeightTable();
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('weightTrackerData', JSON.stringify(profiles));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('weightTrackerData');
+            if (savedData) {
+                profiles = JSON.parse(savedData);
+                if (profiles.length > 0) {
+                    selectedProfile = profiles[0].id;
+                }
+            }
+            if (profiles.length === 0) {
+                addProfile(); // Adiciona um perfil padrão se não houver dados salvos
+            }
+            updateProfileSelect();
+            updateChart();
+            updateWeightTable();
+        }
+
+        document.getElementById('profileSelect').addEventListener('change', (e) => {
+            selectedProfile = parseInt(e.target.value);
+            updateChart();
+            updateWeightTable();
+        });
+
+        // Inicialização
+        initializeChart();
+        loadData();
+    </script>
+</body>
+</html>
