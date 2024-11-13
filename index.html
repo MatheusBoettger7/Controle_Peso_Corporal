@@ -178,34 +178,53 @@
             chart.data.datasets[0].data = sortedWeights.map(w => w.weight);
             chart.update();
         }
+    function updateWeightTable() {
+        const profile = profiles.find(p => p.id === selectedProfile);
+        const tableBody = document.querySelector('#weightTable tbody');
+        tableBody.innerHTML = '';
+        
+        const sortedWeights = profile.weights.sort((a, b) => new Date(b.date) - new Date(a.date));
+        sortedWeights.forEach((weight, index) => {
+            const row = tableBody.insertRow();
+            row.insertCell(0).textContent = weight.date;
+            row.insertCell(1).textContent = weight.weight.toFixed(1);
+            
+            const diffCell = row.insertCell(2);
+            if (index < sortedWeights.length - 1) {
+                const diff = weight.weight - sortedWeights[index + 1].weight;
+                const diffFormatted = diff.toFixed(1);
+                diffCell.textContent = diff > 0 ? `+${diffFormatted}` : diffFormatted;
+                diffCell.classList.add('weight-diff');
+                diffCell.classList.add(diff > 0 ? 'positive' : 'negative');
+            } else {
+                diffCell.textContent = '-';
+            }
 
-        function updateWeightTable() {
-            const profile = profiles.find(p => p.id === selectedProfile);
-            const tableBody = document.querySelector('#weightTable tbody');
-            tableBody.innerHTML = '';
-            const sortedWeights = profile.weights.sort((a, b) => new Date(b.date) - new Date(a.date));
-            sortedWeights.forEach((weight, index) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = weight.date;
-                row.insertCell(1).textContent = weight.weight.toFixed(1);
-                
-                const diffCell = row.insertCell(2);
-                if (index < sortedWeights.length - 1) {
-                    const diff = weight.weight - sortedWeights[index + 1].weight;
-                    const diffFormatted = diff.toFixed(1);
-                    diffCell.textContent = diff > 0 ? `+${diffFormatted}` : diffFormatted;
-                    diffCell.classList.add('weight-diff');
-                    diffCell.classList.add(diff > 0 ? 'positive' : 'negative');
-                } else {
-                    diffCell.textContent = '-';
-                }
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Remover';
+            deleteButton.onclick = () => removeWeight(index);
+            row.insertCell(3).appendChild(deleteButton);
+        });
 
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Remover';
-                deleteButton.onclick = () => removeWeight(index);
-                row.insertCell(3).appendChild(deleteButton);
-            });
+        // Adiciona a linha de resumo com a diferença total
+        if (sortedWeights.length > 1) {
+            const firstWeight = sortedWeights[sortedWeights.length - 1].weight;
+            const lastWeight = sortedWeights[0].weight;
+            const totalDiff = lastWeight - firstWeight;
+
+            const totalRow = tableBody.insertRow();
+            const totalCell = totalRow.insertCell(0);
+            totalCell.colSpan = 2;
+            totalCell.textContent = "Diferença Total de Peso";
+
+            const diffCell = totalRow.insertCell(1);
+            diffCell.textContent = totalDiff > 0 ? `+${totalDiff.toFixed(1)}` : totalDiff.toFixed(1);
+            diffCell.classList.add('weight-diff');
+            diffCell.classList.add(totalDiff > 0 ? 'positive' : 'negative');
+
+            totalRow.insertCell(3).textContent = ''; // Célula vazia para manter a estrutura
         }
+    }
 
         function removeWeight(index) {
             const profile = profiles.find(p => p.id === selectedProfile);
